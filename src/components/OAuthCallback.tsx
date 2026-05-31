@@ -8,65 +8,25 @@ export default function OAuthCallback() {
 
   useEffect(() => {
     const handleAuth = async () => {
+      // Deriv returns tokens in the URL parameters like ?acct1=...&token1=...
       const urlParams = new URLSearchParams(window.location.search);
-      const code = urlParams.get('code');
-      const state = urlParams.get('state');
+      const token1 = urlParams.get('token1');
 
-      if (!code || !state) {
+      if (!token1) {
         return; // Not an oauth callback
       }
 
-      const storedState = sessionStorage.getItem('oauth_state');
-      const codeVerifier = sessionStorage.getItem('oauth_code_verifier');
-      const storedAppId = sessionStorage.getItem('oauth_app_id') || '1089';
-
-      if (state !== storedState) {
-        setError('State mismatch. Security verification failed.');
-        setLoading(false);
-        return;
-      }
-
-      if (!codeVerifier) {
-        setError('Missing code verifier in session cache.');
-        setLoading(false);
-        return;
-      }
-
       try {
-        const response = await fetch('/api/oauth/token', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            code,
-            code_verifier: codeVerifier,
-            redirect_uri: window.location.origin + '/',
-            client_id: storedAppId
-          }),
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.error_description || data.error || 'Failed to exchange authorization code');
-        }
-
-        const accessToken = data.access_token;
-        
         // Store in session storage
-        sessionStorage.setItem('deriv_session_token', accessToken);
-        setToken(accessToken);
+        sessionStorage.setItem('deriv_session_token', token1);
+        setToken(token1);
         setIsAuthenticated(true);
         
-        // Clean up URL parameters
+        // Clean up URL parameters to hide the token from the address bar
         window.history.replaceState({}, document.title, '/');
       } catch (err: any) {
-        setError(err.message || 'Network failure during authentication exchange.');
+        setError(err.message || 'Network failure during authentication extraction.');
       } finally {
-        // Clean up temporary variables
-        sessionStorage.removeItem('oauth_state');
-        sessionStorage.removeItem('oauth_code_verifier');
         sessionStorage.removeItem('oauth_app_id');
         setLoading(false);
       }
@@ -92,7 +52,7 @@ export default function OAuthCallback() {
     );
   }
 
-  if (loading && new URLSearchParams(window.location.search).has('code')) {
+  if (loading && new URLSearchParams(window.location.search).has('token1')) {
     return (
       <div className="h-screen w-screen flex flex-col items-center justify-center bg-gray-950 font-mono text-sm tracking-widest text-brand-cyan">
         <div className="animate-spin h-8 w-8 border-4 border-brand-cyan border-t-transparent rounded-full mb-4 glow-neon" />

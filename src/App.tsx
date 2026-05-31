@@ -710,7 +710,7 @@ export default function App() {
         <OAuthCallback />
         
         {/* Only show login button if not currently processing callback */}
-        {!(new URLSearchParams(window.location.search).has('code')) && (
+        {!(new URLSearchParams(window.location.search).has('token1')) && (
           <div className="p-8 border border-gray-800 rounded-xl bg-glass max-w-md text-center shadow-lg shadow-brand-cyan/10 z-10 w-full max-w-sm">
             <h1 className="text-2xl font-bold mb-4 font-display text-white">Quantum AI Trader</h1>
             <p className="text-gray-400 mb-6 lowercase">Secure terminal linkage required for real-time telemetry.</p>
