@@ -296,8 +296,8 @@ export default function App() {
     setIsWsConnected('connecting');
     logWS('sent', 'connection_attempt', 'Connecting to Deriv WebSocket at wss://ws.derivws.com/websockets/v3...');
 
-    // Public app_id default: 1089 allows playground access
-    const app_id = 1089; 
+    // Use the logged-in app ID from session storage, or default to 33qjLtFe6DU4gMuHK70os
+    const app_id = sessionStorage.getItem('oauth_app_id') || '33qjLtFe6DU4gMuHK70os'; 
     const wsUrl = `wss://ws.derivws.com/websockets/v3?app_id=${app_id}`;
     
     const socket = new WebSocket(wsUrl);
@@ -702,7 +702,8 @@ export default function App() {
     URL.revokeObjectURL(url);
   };
 
-  const [loginAppId, setLoginAppId] = useState('1089');
+  const [loginAppId, setLoginAppId] = useState('33qjLtFe6DU4gMuHK70os');
+  const [loginClientId, setLoginClientId] = useState('019daa0e-42a6-74e9-b1cf-3261b13217c0');
 
   if (!isAuthenticated) {
     return (
@@ -715,20 +716,31 @@ export default function App() {
             <h1 className="text-2xl font-bold mb-4 font-display text-white">Quantum AI Trader</h1>
             <p className="text-gray-400 mb-6 lowercase">Secure terminal linkage required for real-time telemetry.</p>
             
-            <div className="mb-6 space-y-2 text-left">
+            <div className="mb-4 space-y-2 text-left">
               <label className="block text-[10px] uppercase text-gray-500">Deriv App ID</label>
               <input
                 type="text"
                 value={loginAppId}
                 onChange={(e) => setLoginAppId(e.target.value)}
-                placeholder="1089"
+                placeholder="33qjLtFe6DU4gMuHK70os"
                 className="w-full bg-gray-900 border border-gray-800 rounded-lg py-2 px-3 text-white font-mono text-xs focus:outline-none focus:border-brand-cyan"
               />
-              <p className="text-[9px] text-gray-600 leading-tight">Must match the Redirect URI registered for this app: <br/><span className="text-gray-400">{window.location.origin}/</span></p>
+            </div>
+
+            <div className="mb-6 space-y-2 text-left">
+              <label className="block text-[10px] uppercase text-gray-500">Deriv Client ID (OAuth V2)</label>
+              <input
+                type="text"
+                value={loginClientId}
+                onChange={(e) => setLoginClientId(e.target.value)}
+                placeholder="019daa0e-42a6-74e9-b1cf-3261b13217c0"
+                className="w-full bg-gray-900 border border-gray-800 rounded-lg py-2 px-3 text-white font-mono text-xs focus:outline-none focus:border-brand-cyan"
+              />
+              <p className="text-[9px] text-gray-600 leading-tight mt-1">Must match the Redirect URI registered for this app: <br/><span className="text-gray-400">{window.location.origin}/</span></p>
             </div>
 
             <button 
-              onClick={() => loginWithDeriv(loginAppId)}
+              onClick={() => loginWithDeriv(loginAppId, loginClientId)}
               className="w-full py-3 px-6 bg-[#ff444f] text-white font-bold rounded-lg hover:bg-opacity-90 transition-colors flex items-center justify-center gap-3"
             >
               Login with Deriv

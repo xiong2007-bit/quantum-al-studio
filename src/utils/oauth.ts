@@ -33,9 +33,13 @@ export const useDerivAuth = () => {
     }
   }, []);
 
-  const loginWithDeriv = async (appId: string) => {
+  const loginWithDeriv = async (appId: string, clientId?: string) => {
     sessionStorage.setItem('oauth_app_id', appId);
-    window.location.href = `https://oauth.deriv.com/oauth2/authorize?app_id=${appId}`;
+    let authUrl = `https://oauth.deriv.com/oauth2/authorize?app_id=${appId}`;
+    if (clientId) {
+      authUrl += `&client_id=${clientId}`;
+    }
+    window.location.href = authUrl;
   };
 
   const logout = () => {
