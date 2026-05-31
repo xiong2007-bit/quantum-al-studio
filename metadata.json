@@ -1,0 +1,6 @@
+{
+  "name": "Quantum AI Trader",
+  "description": "An institutional-grade trading terminal featuring real-time market data, AI-generated technical signals, risk management, and live execution.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

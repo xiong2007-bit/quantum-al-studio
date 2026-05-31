@@ -1,0 +1,140 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile details",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "derivAccountId": { "type": "string" },
+        "currency": { "type": "string" },
+        "accountType": { "type": "string" },
+        "country": { "type": "string" },
+        "joinDate": { "type": "string" },
+        "lastLogin": { "type": "string" },
+        "avatarUrl": { "type": "string" },
+        "winRate": { "type": "number" },
+        "totalTrades": { "type": "number" },
+        "winningTrades": { "type": "number" },
+        "losingTrades": { "type": "number" },
+        "averageProfit": { "type": "number" },
+        "averageLoss": { "type": "number" },
+        "totalProfitLoss": { "type": "number" },
+        "riskScore": { "type": "number" }
+      },
+      "required": ["name", "email", "derivAccountId", "currency", "country", "joinDate", "lastLogin"]
+    },
+    "AccountBalance": {
+      "title": "AccountBalance",
+      "description": "User account balance",
+      "type": "object",
+      "properties": {
+        "balance": { "type": "number" },
+        "equity": { "type": "number" },
+        "margin": { "type": "number" },
+        "freeMargin": { "type": "number" },
+        "dailyPnL": { "type": "number" },
+        "weeklyPnL": { "type": "number" },
+        "monthlyPnL": { "type": "number" }
+      },
+      "required": ["balance", "equity", "margin", "freeMargin", "dailyPnL", "weeklyPnL", "monthlyPnL"]
+    },
+    "TradePosition": {
+      "title": "TradePosition",
+      "description": "Active trade position",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "symbol": { "type": "string" },
+        "displayName": { "type": "string" },
+        "action": { "type": "string", "enum": ["BUY", "SELL"] },
+        "entryPrice": { "type": "number" },
+        "currentPrice": { "type": "number" },
+        "stake": { "type": "number" },
+        "pnl": { "type": "number" },
+        "timestamp": { "type": "string" },
+        "isAutoTraded": { "type": "boolean" }
+      },
+      "required": ["userId", "symbol", "displayName", "action", "entryPrice", "currentPrice", "stake", "pnl", "timestamp"]
+    },
+    "TradeHistoryItem": {
+      "title": "TradeHistoryItem",
+      "description": "Closed trade history",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "symbol": { "type": "string" },
+        "displayName": { "type": "string" },
+        "action": { "type": "string", "enum": ["BUY", "SELL"] },
+        "entryPrice": { "type": "number" },
+        "exitPrice": { "type": "number" },
+        "stake": { "type": "number" },
+        "pnl": { "type": "number" },
+        "result": { "type": "string", "enum": ["win", "loss", "refund"] },
+        "timestamp": { "type": "string" },
+        "isAutoTraded": { "type": "boolean" }
+      },
+      "required": ["userId", "symbol", "displayName", "action", "entryPrice", "exitPrice", "stake", "pnl", "result", "timestamp"]
+    },
+    "JournalEntry": {
+      "title": "JournalEntry",
+      "description": "Trade journal entry",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "title": { "type": "string" },
+        "symbol": { "type": "string" },
+        "action": { "type": "string", "enum": ["BUY", "SELL"] },
+        "entryReason": { "type": "string" },
+        "exitReason": { "type": "string" },
+        "aiRecommendation": { "type": "string" },
+        "notes": { "type": "string" },
+        "performanceReview": { "type": "string", "enum": ["excellent", "good", "neutral", "poor", "terrible"] },
+        "pnl": { "type": "number" }
+      },
+      "required": ["userId", "timestamp", "title", "symbol", "action", "entryReason", "exitReason", "notes", "performanceReview", "pnl"]
+    },
+    "SystemNotification": {
+      "title": "SystemNotification",
+      "description": "System notification",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "type": { "type": "string", "enum": ["success", "warning", "info", "danger"] },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "isRead": { "type": "boolean" }
+      },
+      "required": ["userId", "timestamp", "type", "title", "message", "isRead"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/profile/default": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "User profile data"
+    },
+    "/users/{userId}/balance/default": {
+      "schema": { "$ref": "#/entities/AccountBalance" },
+      "description": "User account balance"
+    },
+    "/users/{userId}/positions/{positionId}": {
+      "schema": { "$ref": "#/entities/TradePosition" },
+      "description": "User active trade positions"
+    },
+    "/users/{userId}/history/{historyId}": {
+      "schema": { "$ref": "#/entities/TradeHistoryItem" },
+      "description": "User closed trade history"
+    },
+    "/users/{userId}/journals/{journalId}": {
+      "schema": { "$ref": "#/entities/JournalEntry" },
+      "description": "User trade journals"
+    },
+    "/users/{userId}/notifications/{notificationId}": {
+      "schema": { "$ref": "#/entities/SystemNotification" },
+      "description": "User notifications"
+    }
+  }
+}
