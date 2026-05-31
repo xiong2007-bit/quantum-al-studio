@@ -702,6 +702,8 @@ export default function App() {
     URL.revokeObjectURL(url);
   };
 
+  const [loginAppId, setLoginAppId] = useState('1089');
+
   if (!isAuthenticated) {
     return (
       <div className="h-screen w-screen flex flex-col items-center justify-center bg-gray-950 font-mono text-sm tracking-widest text-brand-cyan relative">
@@ -709,11 +711,24 @@ export default function App() {
         
         {/* Only show login button if not currently processing callback */}
         {!(new URLSearchParams(window.location.search).has('code')) && (
-          <div className="p-8 border border-gray-800 rounded-xl bg-glass max-w-md text-center shadow-lg shadow-brand-cyan/10 z-10">
+          <div className="p-8 border border-gray-800 rounded-xl bg-glass max-w-md text-center shadow-lg shadow-brand-cyan/10 z-10 w-full max-w-sm">
             <h1 className="text-2xl font-bold mb-4 font-display text-white">Quantum AI Trader</h1>
-            <p className="text-gray-400 mb-8 lowercase">Secure terminal linkage required for real-time telemetry.</p>
+            <p className="text-gray-400 mb-6 lowercase">Secure terminal linkage required for real-time telemetry.</p>
+            
+            <div className="mb-6 space-y-2 text-left">
+              <label className="block text-[10px] uppercase text-gray-500">Deriv App ID</label>
+              <input
+                type="text"
+                value={loginAppId}
+                onChange={(e) => setLoginAppId(e.target.value)}
+                placeholder="1089"
+                className="w-full bg-gray-900 border border-gray-800 rounded-lg py-2 px-3 text-white font-mono text-xs focus:outline-none focus:border-brand-cyan"
+              />
+              <p className="text-[9px] text-gray-600 leading-tight">Must match the Redirect URI registered for this app: <br/><span className="text-gray-400">{window.location.origin}/</span></p>
+            </div>
+
             <button 
-              onClick={() => loginWithDeriv('1089')}
+              onClick={() => loginWithDeriv(loginAppId)}
               className="w-full py-3 px-6 bg-[#ff444f] text-white font-bold rounded-lg hover:bg-opacity-90 transition-colors flex items-center justify-center gap-3"
             >
               Login with Deriv

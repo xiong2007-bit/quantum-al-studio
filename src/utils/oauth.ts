@@ -40,11 +40,13 @@ export const useDerivAuth = () => {
 
     sessionStorage.setItem('oauth_code_verifier', codeVerifier);
     sessionStorage.setItem('oauth_state', state);
+    sessionStorage.setItem('oauth_app_id', appId);
 
     const redirectUri = window.location.origin + '/';
-    const authUrl = new URL('https://auth.deriv.com/oauth2/auth');
+    const authUrl = new URL('https://oauth.deriv.com/oauth2/authorize');
     authUrl.searchParams.append('response_type', 'code');
     authUrl.searchParams.append('client_id', appId);
+    authUrl.searchParams.append('app_id', appId);
     authUrl.searchParams.append('redirect_uri', redirectUri);
     authUrl.searchParams.append('scope', 'trade account_manage');
     authUrl.searchParams.append('state', state);

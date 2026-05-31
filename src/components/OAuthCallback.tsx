@@ -18,6 +18,7 @@ export default function OAuthCallback() {
 
       const storedState = sessionStorage.getItem('oauth_state');
       const codeVerifier = sessionStorage.getItem('oauth_code_verifier');
+      const storedAppId = sessionStorage.getItem('oauth_app_id') || '1089';
 
       if (state !== storedState) {
         setError('State mismatch. Security verification failed.');
@@ -41,7 +42,7 @@ export default function OAuthCallback() {
             code,
             code_verifier: codeVerifier,
             redirect_uri: window.location.origin + '/',
-            client_id: '1089'
+            client_id: storedAppId
           }),
         });
 
@@ -66,6 +67,7 @@ export default function OAuthCallback() {
         // Clean up temporary variables
         sessionStorage.removeItem('oauth_state');
         sessionStorage.removeItem('oauth_code_verifier');
+        sessionStorage.removeItem('oauth_app_id');
         setLoading(false);
       }
     };
