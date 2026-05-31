@@ -143,9 +143,10 @@ export default function App() {
 
     try {
       const headers = { Authorization: `Bearer ${token}` };
+      const appId = sessionStorage.getItem('oauth_app_id') || '1089';
 
       // Fetch Account Info
-      const resAccount = await fetch('/api/deriv/account', { headers });
+      const resAccount = await fetch(`/api/deriv/account?appId=${appId}`, { headers });
       if (resAccount.ok) {
         const accountData = await resAccount.json();
         // Since we are decoupling a bit from firebase for the dashboard,
@@ -172,7 +173,7 @@ export default function App() {
         });
       }
 
-      const resBalance = await fetch('/api/deriv/balance', { headers });
+      const resBalance = await fetch(`/api/deriv/balance?appId=${appId}`, { headers });
       if (resBalance.ok) {
         const balanceData = await resBalance.json();
         setBalance({

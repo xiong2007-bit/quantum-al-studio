@@ -52,7 +52,7 @@ const authMiddleware = (req: any, res: any, next: any) => {
 
 app.get('/api/deriv/account', authMiddleware, async (req: any, res: any) => {
   try {
-    const data = await DerivApiService.getAccount(req.token);
+    const data = await DerivApiService.getAccount(req.token, req.query.appId as string);
     res.json(data);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -61,7 +61,7 @@ app.get('/api/deriv/account', authMiddleware, async (req: any, res: any) => {
 
 app.get('/api/deriv/balance', authMiddleware, async (req: any, res: any) => {
   try {
-    const data = await DerivApiService.getBalance(req.token);
+    const data = await DerivApiService.getBalance(req.token, req.query.appId as string);
     res.json(data);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -70,7 +70,7 @@ app.get('/api/deriv/balance', authMiddleware, async (req: any, res: any) => {
 
 app.get('/api/deriv/profile', authMiddleware, async (req: any, res: any) => {
   try {
-    const data = await DerivApiService.getProfile(req.token);
+    const data = await DerivApiService.getProfile(req.token, req.query.appId as string);
     res.json(data);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -79,7 +79,7 @@ app.get('/api/deriv/profile', authMiddleware, async (req: any, res: any) => {
 
 app.get('/api/deriv/history', authMiddleware, async (req: any, res: any) => {
   try {
-    const data = await DerivApiService.getHistory(req.token);
+    const data = await DerivApiService.getHistory(req.token, req.query.appId as string);
     res.json(data);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -88,7 +88,7 @@ app.get('/api/deriv/history', authMiddleware, async (req: any, res: any) => {
 
 app.get('/api/deriv/positions', authMiddleware, async (req: any, res: any) => {
   try {
-    const data = await DerivApiService.getPositions(req.token);
+    const data = await DerivApiService.getPositions(req.token, req.query.appId as string);
     res.json(data);
   } catch (err: any) {
     res.status(500).json({ error: err.message });

@@ -1,9 +1,9 @@
 import WebSocket from 'ws';
 
 export class DerivApiService {
-  private static async executeConfiguredCall(token: string, request: any): Promise<any> {
+  private static async executeConfiguredCall(token: string, request: any, appId: string = '1089'): Promise<any> {
     return new Promise((resolve, reject) => {
-      const ws = new WebSocket('wss://ws.derivws.com/websockets/v3?app_id=1089');
+      const ws = new WebSocket(`wss://ws.derivws.com/websockets/v3?app_id=${appId}`);
       let isAuthorized = false;
 
       ws.on('open', () => {
@@ -37,28 +37,28 @@ export class DerivApiService {
     });
   }
 
-  static async getAccount(token: string) {
-    const res = await this.executeConfiguredCall(token, { get_settings: 1 });
+  static async getAccount(token: string, appId?: string) {
+    const res = await this.executeConfiguredCall(token, { get_settings: 1 }, appId);
     return res.get_settings;
   }
 
-  static async getBalance(token: string) {
-    const res = await this.executeConfiguredCall(token, { balance: 1, account: 'all' });
+  static async getBalance(token: string, appId?: string) {
+    const res = await this.executeConfiguredCall(token, { balance: 1, account: 'all' }, appId);
     return res.balance;
   }
 
-  static async getProfile(token: string) {
-    const res = await this.executeConfiguredCall(token, { get_settings: 1 });
+  static async getProfile(token: string, appId?: string) {
+    const res = await this.executeConfiguredCall(token, { get_settings: 1 }, appId);
     return res.get_settings;
   }
 
-  static async getHistory(token: string) {
-    const res = await this.executeConfiguredCall(token, { statement: 1, description: 1, limit: 50 });
+  static async getHistory(token: string, appId?: string) {
+    const res = await this.executeConfiguredCall(token, { statement: 1, description: 1, limit: 50 }, appId);
     return res.statement;
   }
 
-  static async getPositions(token: string) {
-    const res = await this.executeConfiguredCall(token, { portfolio: 1 });
+  static async getPositions(token: string, appId?: string) {
+    const res = await this.executeConfiguredCall(token, { portfolio: 1 }, appId);
     return res.portfolio;
   }
 }
