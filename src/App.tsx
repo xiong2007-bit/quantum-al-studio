@@ -64,15 +64,79 @@ import { executeFirebaseTrade, closeFirebasePosition } from './services/TradeExe
 import { doc, updateDoc, setDoc, deleteDoc } from 'firebase/firestore';
 import { db } from './firebase';
 
-import { useDerivAuth } from './utils/oauth';
-import OAuthCallback from './components/OAuthCallback';
+import { generateRandomString, generateCodeChallenge } from './utils/deriv-pkce';
 
 export default function App() {
   const { 
-    currentUser, profile, setProfile, balance, setBalance, positions, setPositions, tradeHistory, journals, riskSettings, autoTraderConfig, notifications, alerts
+    currentUser, loginAnonymously, profile, setProfile, balance, setBalance, positions, setPositions, tradeHistory, journals, riskSettings, autoTraderConfig, notifications, alerts
   } = useFirebaseData();
   
-  const { isAuthenticated, token, loginWithDeriv, logout } = useDerivAuth();
+  // Deriv OAuth Initiation
+  const loginWithDeriv = async () => {
+    const appId = '33qjLtFe6DU4gMuHK70os'; // User provided app ID
+    const codeVerifier = generateRandomString(64);
+    const codeChallenge = await generateCodeChallenge(codeVerifier);
+    const state = generateRandomString(32);
+
+    sessionStorage.setItem('oauth_code_verifier', codeVerifier);
+    sessionStorage.setItem('oauth_state', state);
+
+    const redirectUri = window.location.origin + '/';
+    const authUrl = new URL('https://oauth.deriv.com/oauth2/authorize');
+    authUrl.searchParams.append('response_type', 'code');
+    authUrl.searchParams.append('client_id', appId);
+    authUrl.searchParams.append('redirect_uri', redirectUri);
+    authUrl.searchParams.append('scope', 'trade account_manage read');
+    authUrl.searchParams.append('state', state);
+    authUrl.searchParams.append('code_challenge', codeChallenge);
+    authUrl.searchParams.append('code_challenge_method', 'S256');
+
+    window.location.href = authUrl.toString();
+  };
+
+  // Deriv OAuth Callback handling (put in useEffect)
+  useEffect(() => {
+    const handleAuthCallback = async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const code = urlParams.get('code');
+      const state = urlParams.get('state');
+
+      if (!code || !state) return;
+
+      const storedState = sessionStorage.getItem('oauth_state');
+      const codeVerifier = sessionStorage.getItem('oauth_code_verifier');
+      
+      if (state !== storedState) {
+        console.error('State mismatch');
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/oauth/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            code,
+            code_verifier: codeVerifier,
+            redirect_uri: window.location.origin + '/',
+            client_id: '33qjLtFe6DU4gMuHK70os'
+          }),
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+          sessionStorage.setItem('deriv_token', data.access_token);
+          await loginAnonymously();
+          window.history.replaceState({}, document.title, '/');
+          window.location.reload();
+        }
+      } catch (err) {
+        console.error('Token exchange failed', err);
+      }
+    };
+    handleAuthCallback();
+  }, []);
+
 
   // Navigation active tab State
   const [activeTab, setActiveTab] = useState<'terminal' | 'signals' | 'history' | 'analytics' | 'journal' | 'risk' | 'account' | 'logs'>('terminal');
@@ -106,10 +170,6 @@ export default function App() {
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [showNotificationsDropdown, setShowNotificationsDropdown] = useState<boolean>(false);
 
-  // Deriv token linkages
-  const [derivApiToken, setDerivApiToken] = useState<string>('');
-  const [isTokenAuthorized, setIsTokenAuthorized] = useState<boolean>(false);
-
   // WebSocket Ref handles
   const socketRef = useRef<WebSocket | null>(null);
   const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -137,66 +197,6 @@ export default function App() {
     // Manage Deriv WebSocket Subscription toggle
     subscribeSymbolTick(activeSymbol.symbol);
   }, [activeSymbol.symbol, chartTimeframe]);
-
-  const fetchBackendData = async () => {
-    if (!token) return;
-
-    try {
-      const headers = { Authorization: `Bearer ${token}` };
-      const appId = sessionStorage.getItem('oauth_app_id') || '1089';
-
-      // Fetch Account Info
-      const resAccount = await fetch(`/api/deriv/account?appId=${appId}`, { headers });
-      if (resAccount.ok) {
-        const accountData = await resAccount.json();
-        // Since we are decoupling a bit from firebase for the dashboard,
-        // we can store this in a generic state or modify profile
-        setProfile({
-          id: accountData.email || 'Deriv User',
-          name: accountData.name || 'Deriv User',
-          email: accountData.email || '',
-          derivAccountId: accountData.client_id || '',
-          currency: accountData.currency || 'USD',
-          accountType: accountData.is_virtual ? 'demo' : 'real',
-          country: accountData.country || '',
-          joinDate: new Date().toISOString(),
-          lastLogin: new Date().toISOString(),
-          avatarUrl: '',
-          winRate: 0,
-          totalTrades: 0,
-          winningTrades: 0,
-          losingTrades: 0,
-          averageProfit: 0,
-          averageLoss: 0,
-          totalProfitLoss: 0,
-          riskScore: 5
-        });
-      }
-
-      const resBalance = await fetch(`/api/deriv/balance?appId=${appId}`, { headers });
-      if (resBalance.ok) {
-        const balanceData = await resBalance.json();
-        setBalance({
-          balance: balanceData.balance || 0,
-          equity: balanceData.balance || 0,
-          margin: 0,
-          freeMargin: balanceData.balance || 0,
-          dailyPnL: 0,
-          weeklyPnL: 0,
-          monthlyPnL: 0
-        });
-      }
-
-    } catch (err) {
-      console.error('Failed to sync Deriv OAuth data', err);
-    }
-  };
-
-  useEffect(() => {
-    if (isAuthenticated && token) {
-      fetchBackendData();
-    }
-  }, [isAuthenticated, token]);
 
   // --- Dynamic calculations parameters mapping on the active candles ---
   const closes = activeCandles.map(c => c.close);
@@ -308,6 +308,12 @@ export default function App() {
       setIsWsConnected('connected');
       logWS('received', 'connection_open', 'Deriv WS Telemetry link established.');
       
+      const token = sessionStorage.getItem('deriv_token');
+      if (token) {
+        socket.send(JSON.stringify({ authorize: token }));
+        logWS('sent', 'authorize', { token: '***' });
+      }
+
       // Send standard heartbeat ping every 30 seconds
       heartbeatIntervalRef.current = setInterval(() => {
         if (socketRef.current?.readyState === WebSocket.OPEN) {
@@ -375,7 +381,6 @@ export default function App() {
 
         // Authorize confirmation feedback
         if (msgType === 'authorize' && data.authorize) {
-          setIsTokenAuthorized(true);
           const balanceVal = Number(data.authorize.balance);
           const nameVal = data.authorize.fullname || 'Tanatswan Deriv';
           
@@ -633,21 +638,6 @@ export default function App() {
   };
 
   // --- API token handshake links ---
-  const handleAuthorizeToken = async () => {
-    if (!derivApiToken) {
-      setIsTokenAuthorized(false);
-      addTerminalNotification('warning', 'Token Cleared', 'Empty token wrapper. Resetting terminal environment simulation.');
-      return;
-    }
-
-    if (socketRef.current?.readyState === WebSocket.OPEN) {
-      const payload = { authorize: derivApiToken };
-      socketRef.current.send(JSON.stringify(payload));
-      logWS('sent', 'authorize_call', payload);
-    } else {
-      addTerminalNotification('danger', 'Socket Offline', 'Active link must be CONNECTED first to authorize live profiles.');
-    }
-  };
 
   // Trigger custom notifications notifications
   const addTerminalNotification = (type: 'success' | 'warning' | 'info' | 'danger', title: string, message: string) => {
@@ -667,7 +657,6 @@ export default function App() {
     } catch {
       // quiet
     }
-    fetchBackendData();
   };
 
   const handleClearAllNotifications = async () => {
@@ -703,51 +692,18 @@ export default function App() {
     URL.revokeObjectURL(url);
   };
 
-  const [loginAppId, setLoginAppId] = useState('33qjLtFe6DU4gMuHK70os');
-  const [loginClientId, setLoginClientId] = useState('019daa0e-42a6-74e9-b1cf-3261b13217c0');
-
-  if (!isAuthenticated) {
+  if (!currentUser) {
     return (
       <div className="h-screen w-screen flex flex-col items-center justify-center bg-gray-950 font-mono text-sm tracking-widest text-brand-cyan relative">
-        <OAuthCallback />
-        
-        {/* Only show login button if not currently processing callback */}
-        {!(new URLSearchParams(window.location.search).has('token1')) && (
-          <div className="p-8 border border-gray-800 rounded-xl bg-glass max-w-md text-center shadow-lg shadow-brand-cyan/10 z-10 w-full max-w-sm">
+        <div className="p-8 border border-gray-800 rounded-xl bg-glass max-w-md text-center shadow-lg shadow-brand-cyan/10 z-10 w-full max-w-sm">
             <h1 className="text-2xl font-bold mb-4 font-display text-white">Quantum AI Trader</h1>
-            <p className="text-gray-400 mb-6 lowercase">Secure terminal linkage required for real-time telemetry.</p>
-            
-            <div className="mb-4 space-y-2 text-left">
-              <label className="block text-[10px] uppercase text-gray-500">Deriv App ID</label>
-              <input
-                type="text"
-                value={loginAppId}
-                onChange={(e) => setLoginAppId(e.target.value)}
-                placeholder="33qjLtFe6DU4gMuHK70os"
-                className="w-full bg-gray-900 border border-gray-800 rounded-lg py-2 px-3 text-white font-mono text-xs focus:outline-none focus:border-brand-cyan"
-              />
-            </div>
-
-            <div className="mb-6 space-y-2 text-left">
-              <label className="block text-[10px] uppercase text-gray-500">Deriv Client ID (OAuth V2)</label>
-              <input
-                type="text"
-                value={loginClientId}
-                onChange={(e) => setLoginClientId(e.target.value)}
-                placeholder="019daa0e-42a6-74e9-b1cf-3261b13217c0"
-                className="w-full bg-gray-900 border border-gray-800 rounded-lg py-2 px-3 text-white font-mono text-xs focus:outline-none focus:border-brand-cyan"
-              />
-              <p className="text-[9px] text-gray-600 leading-tight mt-1">Must match the Redirect URI registered for this app: <br/><span className="text-gray-400">{window.location.origin}/</span></p>
-            </div>
-
             <button 
-              onClick={() => loginWithDeriv(loginAppId, loginClientId)}
+              onClick={loginWithDeriv}
               className="w-full py-3 px-6 bg-[#ff444f] text-white font-bold rounded-lg hover:bg-opacity-90 transition-colors flex items-center justify-center gap-3"
             >
-              Login with Deriv
+              Connect Deriv
             </button>
-          </div>
-        )}
+        </div>
       </div>
     );
   }
@@ -1215,7 +1171,7 @@ export default function App() {
             {activeTab === 'account' && (
               <AccountPanel
                 profile={profile}
-                onLogout={logout}
+                onLogout={() => {}}
               />
             )}
 

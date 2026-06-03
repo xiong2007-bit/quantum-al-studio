@@ -4,7 +4,7 @@ import {
   serverTimestamp, where, orderBy, getDoc
 } from 'firebase/firestore';
 import { db, auth } from '../firebase';
-import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut } from 'firebase/auth';
+import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut, signInAnonymously } from 'firebase/auth';
 
 import { 
   UserProfile, AccountBalance, TradePosition, TradeHistoryItem, JournalEntry, RiskSettings, AutoTraderConfig, SystemNotification, AISignal
@@ -121,9 +121,10 @@ export function useFirebaseData() {
   }, []);
 
   const login = () => signInWithPopup(auth, new GoogleAuthProvider());
+  const loginAnonymously = () => signInAnonymously(auth);
   const logout = () => signOut(auth);
 
   return {
-    currentUser, login, logout, profile, setProfile, balance, setBalance, positions, setPositions, tradeHistory, journals, riskSettings, autoTraderConfig, notifications, alerts
+    currentUser, login, loginAnonymously, logout, profile, setProfile, balance, setBalance, positions, setPositions, tradeHistory, journals, riskSettings, autoTraderConfig, notifications, alerts
   };
 }

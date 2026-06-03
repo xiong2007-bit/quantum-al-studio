@@ -4,7 +4,6 @@ import { createServer as createViteServer } from 'vite';
 import { DbService } from './server/db';
 import { generateAISignal } from './server/ai';
 import { AISignal, TechnicalIndicatorValues, TradePosition } from './src/types';
-import { DerivApiService } from './server/derivApi';
 
 const app = express();
 const PORT = 3000;
@@ -22,7 +21,7 @@ app.post('/api/oauth/token', async (req, res) => {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
         grant_type: 'authorization_code',
-        client_id: client_id || '1089',
+        client_id: client_id,
         code,
         code_verifier,
         redirect_uri
@@ -49,51 +48,6 @@ const authMiddleware = (req: any, res: any, next: any) => {
   req.token = authHeader.split(' ')[1];
   next();
 };
-
-app.get('/api/deriv/account', authMiddleware, async (req: any, res: any) => {
-  try {
-    const data = await DerivApiService.getAccount(req.token, req.query.appId as string);
-    res.json(data);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.get('/api/deriv/balance', authMiddleware, async (req: any, res: any) => {
-  try {
-    const data = await DerivApiService.getBalance(req.token, req.query.appId as string);
-    res.json(data);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.get('/api/deriv/profile', authMiddleware, async (req: any, res: any) => {
-  try {
-    const data = await DerivApiService.getProfile(req.token, req.query.appId as string);
-    res.json(data);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.get('/api/deriv/history', authMiddleware, async (req: any, res: any) => {
-  try {
-    const data = await DerivApiService.getHistory(req.token, req.query.appId as string);
-    res.json(data);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.get('/api/deriv/positions', authMiddleware, async (req: any, res: any) => {
-  try {
-    const data = await DerivApiService.getPositions(req.token, req.query.appId as string);
-    res.json(data);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
 
 app.post('/api/logout', (req, res) => {
   // Can destroy secure cookies if we used them, here we just return ok
