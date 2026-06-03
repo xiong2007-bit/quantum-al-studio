@@ -70,10 +70,15 @@ export default function App() {
   const { 
     currentUser, loginAnonymously, profile, setProfile, balance, setBalance, positions, setPositions, tradeHistory, journals, riskSettings, autoTraderConfig, notifications, alerts
   } = useFirebaseData();
+
+  const [configAppId, setConfigAppId] = useState(sessionStorage.getItem('oauth_app_id') || '33qjLtFe6DU4gMuHK70os');
+  const [configRedirectUri, setConfigRedirectUri] = useState(sessionStorage.getItem('oauth_redirect_uri') || window.location.origin + '/');
   
   // Deriv OAuth Initiation
   const loginWithDeriv = async () => {
-    const appId = '33qjLtFe6DU4gMuHK70os'; // User provided app ID
+    sessionStorage.setItem('oauth_app_id', configAppId);
+    sessionStorage.setItem('oauth_redirect_uri', configRedirectUri);
+    
     const codeVerifier = generateRandomString(64);
     const codeChallenge = await generateCodeChallenge(codeVerifier);
     const state = generateRandomString(32);
@@ -81,11 +86,10 @@ export default function App() {
     sessionStorage.setItem('oauth_code_verifier', codeVerifier);
     sessionStorage.setItem('oauth_state', state);
 
-    const redirectUri = window.location.origin + '/';
     const authUrl = new URL('https://oauth.deriv.com/oauth2/authorize');
     authUrl.searchParams.append('response_type', 'code');
-    authUrl.searchParams.append('client_id', appId);
-    authUrl.searchParams.append('redirect_uri', redirectUri);
+    authUrl.searchParams.append('client_id', configAppId);
+    authUrl.searchParams.append('redirect_uri', configRedirectUri);
     authUrl.searchParams.append('scope', 'trade account_manage read');
     authUrl.searchParams.append('state', state);
     authUrl.searchParams.append('code_challenge', codeChallenge);
@@ -118,8 +122,8 @@ export default function App() {
           body: JSON.stringify({
             code,
             code_verifier: codeVerifier,
-            redirect_uri: window.location.origin + '/',
-            client_id: '33qjLtFe6DU4gMuHK70os'
+            redirect_uri: sessionStorage.getItem('oauth_redirect_uri') || (window.location.origin + '/'),
+            client_id: sessionStorage.getItem('oauth_app_id')
           }),
         });
 
@@ -436,6 +440,8 @@ export default function App() {
       const payload = { ticks: sym };
       socketRef.current.send(JSON.stringify(payload));
       logWS('sent', 'ticks_subscribe', payload);
+    } else {
+      logWS('received', 'error', 'Attempted to subscribe while socket not open.');
     }
   };
 
@@ -697,6 +703,24 @@ export default function App() {
       <div className="h-screen w-screen flex flex-col items-center justify-center bg-gray-950 font-mono text-sm tracking-widest text-brand-cyan relative">
         <div className="p-8 border border-gray-800 rounded-xl bg-glass max-w-md text-center shadow-lg shadow-brand-cyan/10 z-10 w-full max-w-sm">
             <h1 className="text-2xl font-bold mb-4 font-display text-white">Quantum AI Trader</h1>
+            <div className="mb-4 text-left">
+              <label className="block text-[10px] uppercase text-gray-500 mb-1">Deriv App ID</label>
+              <input
+                type="text"
+                value={configAppId}
+                onChange={(e) => setConfigAppId(e.target.value)}
+                className="w-full bg-gray-900 border border-gray-800 rounded-lg py-2 px-3 text-white font-mono text-xs focus:outline-none focus:border-brand-cyan"
+              />
+            </div>
+            <div className="mb-4 text-left">
+              <label className="block text-[10px] uppercase text-gray-500 mb-1">Redirect URI</label>
+              <input
+                type="text"
+                value={configRedirectUri}
+                onChange={(e) => setConfigRedirectUri(e.target.value)}
+                className="w-full bg-gray-900 border border-gray-800 rounded-lg py-2 px-3 text-white font-mono text-xs focus:outline-none focus:border-brand-cyan"
+              />
+            </div>
             <button 
               onClick={loginWithDeriv}
               className="w-full py-3 px-6 bg-[#ff444f] text-white font-bold rounded-lg hover:bg-opacity-90 transition-colors flex items-center justify-center gap-3"
